@@ -1,6 +1,28 @@
 import streamlit as st
 
-st.title('Hello World!')
+def main():
+    """
+    Main entry point for the Streamlit app.
+    It displays a sidebar navigation menu that routes to different pages.
+    """
+    st.sidebar.title("Navigation")
+    page = st.sidebar.radio(
+        "Go to",
+        ("Home", "Case Prep", "Drills", "Sparring")
+    )
 
+    if page == "Home":
+        from pages import home
+        home.home_page()
+    elif page == "Case Prep":
+        from pages import case_prep
+        case_prep.case_prep_page()
+    elif page == "Drills":
+        from pages import drills
+        drills.drills_page()
+    elif page == "Sparring":
+        from pages import sparring
+        sparring.sparring_page()
 
-st.write('This is a simple example of a Streamlit app. First TEST')
+if __name__ == "__main__":
+    main()
