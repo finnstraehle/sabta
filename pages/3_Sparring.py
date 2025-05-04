@@ -1,40 +1,26 @@
 import streamlit as st
 import random
+import time
 from data.sparring_questions import sparring_questions
 
-# Audio and Text?
-# Text to speech?
-# AI reading?
-# AI generated questions?
-# Image?
-# user chooses how many questions to answer
-# timer
-# timer for each question
-# AI generated questions?
-
-
-# Page Configuration
-st.set_page_config(
-    page_title="Interview Sparring",
-    layout="wide"
-)
+st.set_page_config(page_title="Interview Sparring", layout="wide")
 
 st.title("Interview Sparring")
-st.write(
-    "Simulate a rapid‑fire interview Q&A session. "
-    "Select one or more topics below, click **Start**, then answer each question aloud. "
-    "Click **Next Question** when you're ready to move on, or **End Session** to stop."
-    " This is a great way to practice your verbal responses and get comfortable with the interview format."
-    " You can also use this to practice with a friend or mentor."
-    " The questions are categorized by topic, and you can choose to focus on specific areas or mix them up for a more varied experience."
-    " The questions are designed to be challenging and thought-provoking, so don't worry if you don't know the answer right away."
-    " Take your time to think through your response and articulate your thoughts clearly."
-)
 
-# ─── UI: Topic Selection ────────────────────────────────────────────────────────
-
+# Sparring Settings
 if 'sparring_active' not in st.session_state or not st.session_state.sparring_active:
     st.session_state.sparring_active = False
+
+    st.write(
+        "Simulate a rapid‑fire interview Q&A session. "
+        "Select one or more topics below, click **Start**, then answer each question aloud. "
+        "Click **Next Question** when you're ready to move on, or **End Session** to stop."
+        " This is a great way to practice your verbal responses and get comfortable with the interview format."
+        " You can also use this to practice with a friend or mentor."
+        " The questions are categorized by topic, and you can choose to focus on specific areas or mix them up for a more varied experience."
+        " The questions are designed to be challenging and thought-provoking, so don't worry if you don't know the answer right away."
+        " Take your time to think through your response and articulate your thoughts clearly."
+    )
 
     topics = list(sparring_questions.keys())
     selected = st.multiselect(
@@ -42,10 +28,14 @@ if 'sparring_active' not in st.session_state or not st.session_state.sparring_ac
         options=topics,
         key="sparring_topics_select"
     )
-    # Slider
-    nr_of_questions = st.slider("How many Question would you like to answer?", 1, 30, 10)
-    time_limit = st.slider("How long would you like to answer each question?", 10, 300, 100)
 
+    nr_of_questions = st.slider("How many questions would you like to answer?", 1, 30, 10)
+
+    use_timer = st.checkbox("Use a Timer?")
+    time_limit = 100  # Default time limit
+    if use_timer:
+        st.write("**Note:** The timer will count down from the time limit you set below.")
+        time_limit = st.slider("How long would you like to answer each question? (Seconds)", 10, 300, 100)
 
     if st.button("Start Sparring"):
         if not selected:
@@ -58,13 +48,16 @@ if 'sparring_active' not in st.session_state or not st.session_state.sparring_ac
                     queue.append((topic, q))
             random.shuffle(queue)
 
+            # Limit the queue to the number of questions defined by the user
+            queue = queue[:nr_of_questions]
+
             st.session_state.sparring_queue = queue
             st.session_state.sparring_index = 0
             st.session_state.sparring_active = True
+            st.session_state.time_limit = time_limit if use_timer else None
             st.rerun()
 
-# ─── UI: Sparring Session ─────────────────────────────────────────────────────
-
+# Sparring Session
 if st.session_state.get('sparring_active'):
     idx = st.session_state.sparring_index
     queue = st.session_state.sparring_queue
@@ -88,3 +81,14 @@ if st.session_state.get('sparring_active'):
         if col2.button("End Session"):
             st.session_state.sparring_active = False
             st.rerun()
+
+        # Timer with Progress Bar
+        if st.session_state.time_limit:
+            timer_placeholder = st.empty()
+            progress_bar = st.progress(0)
+            for remaining in range(st.session_state.time_limit, 0, -1):
+                timer_placeholder.markdown(f"⏳ Time remaining: {remaining} seconds")
+                progress_bar.progress((st.session_state.time_limit - remaining) / st.session_state.time_limit)
+                time.sleep(1)
+            timer_placeholder.markdown("⏳ Time's up!")
+            progress_bar.progress(1.0)
