@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 
 # Page config
-st.set_page_config(page_title="Practice Drills", page_icon="⏱️")
+st.set_page_config(page_title="Practice Drills", layout="wide")
 
 st.title("Practice Drills")
 st.write(

@@ -1,7 +1,7 @@
 ## pages/1_CasePrep.py
 import streamlit as st
 
-st.set_page_config(page_title="Case Prep Guide", page_icon="📚")
+st.set_page_config(page_title="Case Prep Guide", layout="wide")
 
 st.title("Case Interview Preparation Guide")
 st.write(

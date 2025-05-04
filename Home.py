@@ -3,7 +3,7 @@ import pandas as pd
 import altair as alt
 
 # Set page config for the main page (Home)
-st.set_page_config(page_title="Case Interview Prep App", page_icon="💼", layout="wide")
+st.set_page_config(page_title="Case Interview Prep App", layout="wide")
 
 # Initialize session state for user stats if not already done.
 # This will track total questions attempted and correct per drill category.
@@ -28,4 +28,3 @@ st.write(
 
 # Optionally, include a banner image or graphic for visual appeal (using a placeholder image here).
 # st.image("https://via.placeholder.com/800x200.png?text=Case+Interview+Prep", use_column_width=True)
-
