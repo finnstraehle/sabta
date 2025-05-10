@@ -1,7 +1,19 @@
 import streamlit as st
 import random
 import time
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
 from data.sparring_questions import sparring_questions
+
+load_dotenv()
+openai_api_key = os.getenv("OPENAI_API_KEY")
+
+if not openai_api_key:
+    st.error("Fehlender OpenAI API-Key. Bitte `.env` Datei erstellen mit `OPENAI_API_KEY=...`")
+    st.stop()
+
+client = OpenAI(api_key=openai_api_key)
 
 # Set page configuration and logo
 st.set_page_config(
@@ -36,35 +48,23 @@ if 'sparring_active' not in st.session_state or not st.session_state.sparring_ac
         options=topics,
         key="sparring_topics_select"
     )
-
-    st.divider()
+    
     # Fixed number of questions for sparring
     nr_of_questions = 3
 
-    use_timer = st.checkbox("Use a Timer?")
-    time_limit = 100  # Default time limit
-    if use_timer:
-        st.write("**Note:** The timer will count down from the time limit you set below.")
-        time_limit = st.slider("**How long would you like to answer each question? (Seconds)**", 10, 300, 100)
+    # Fixed timer: always 60 seconds per question
+    time_limit = 60
 
     if st.button("Start Sparring"):
         if not selected:
             st.warning("Please choose at least one topic.")
         else:
-            # Build a shuffled queue of (topic, question)
-            queue = []
-            for topic in selected:
-                for q in sparring_questions[topic]:
-                    queue.append((topic, q))
+            queue = [(topic, q) for topic in selected for q in sparring_questions[topic]]
             random.shuffle(queue)
-
-            # Limit the queue to the number of questions defined by the user
-            queue = queue[:nr_of_questions]
-
-            st.session_state.sparring_queue = queue
+            st.session_state.sparring_queue = queue[:nr_of_questions]
             st.session_state.sparring_index = 0
             st.session_state.sparring_active = True
-            st.session_state.time_limit = time_limit if use_timer else None
+            st.session_state.time_limit = time_limit
             st.rerun()
 
 # Sparring Session
@@ -92,12 +92,15 @@ if st.session_state.get('sparring_active'):
             )
         st.write("_Answer aloud, then click below when ready._")
 
-        if st.button("Next Question"):
-            st.session_state.sparring_index += 1
-            st.rerun()
-        if st.button("End Session"):
-            st.session_state.sparring_active = False
-            st.rerun()
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Next Question"):
+                st.session_state.sparring_index += 1
+                st.rerun()
+        with col2:
+            if st.button("End Session"):
+                st.session_state.sparring_active = False
+                st.rerun()
 
         # Timer with Progress Bar
         if st.session_state.time_limit:

@@ -13,6 +13,7 @@ st.title("🎓 Case Interview Preparation Guide")
 
 # Einführungstext
 st.write("Preparing for consulting and finance interviews requires structured thinking and practice. This page covers key strategies and tips to help you excel in interviews.")
+st.divider()
 
 # Abschnitt: Strukturierung & Problemlösung
 st.header('Structuring & Problem Solving')

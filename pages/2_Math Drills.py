@@ -14,9 +14,7 @@ if "stats" not in st.session_state:
         ]
     }
 
-
 def gen_basic_question(level):
-    """Generate a random basic math question for given difficulty."""
     ops = ["+", "-"] if level == 1 else ["+", "-", "*"] if level == 2 else ["+", "-", "*", "/"]
     max_val = 20 if level == 1 else 50 if level == 2 else 100
     a = random.randint(1, max_val)
@@ -34,19 +32,13 @@ def gen_basic_question(level):
     return f"{result*b} ÷ {b}", result
 
 def get_question(category, level):
-    """Return a (question, answer) tuple based on category."""
     if category == "Basic Math":
         return gen_basic_question(level or 1)
     data = drill_questions[category]
-    if category == "Chart Analysis":
-        series, q, ans = random.choice(data)
-        return (series, q), ans
     return random.choice(data)
 
 def check_answer(user, correct):
-    """Validate user's answer against correct answer."""
     try:
-        # numeric compare
         if isinstance(correct, (int, float)):
             return abs(float(user) - correct) < 1e-6
     except:
@@ -54,7 +46,6 @@ def check_answer(user, correct):
     return str(user).strip().lower() == str(correct).lower()
 
 def clear_drill_state():
-    """Remove all session state keys related to drills except stats."""
     stats = st.session_state.stats
     st.session_state.clear()
     st.session_state.stats = stats
@@ -64,6 +55,7 @@ st.set_page_config(page_title="Math Drills", layout="wide")
 st.title("🧠 Practice Drills")
 
 st.write("Solve timed drills. Press Enter to submit answers. After each drill you can start a new one.")
+st.divider()
 
 # Show overall stats
 with st.expander("Your Overall Stats (in this session)"):
@@ -79,9 +71,9 @@ with st.expander("Your Overall Stats (in this session)"):
 
 # ── Drill Setup ────────────────────────────────────────────────────────────────
 if not st.session_state.get("drill_active"):
-    cat = st.selectbox("Category:", list(drill_questions.keys()), key="cat_select")
-    level = st.selectbox("Difficulty (Basic Math):", [1,2,3], format_func=lambda x:f"Level {x}") if cat=="Basic Math" else None
-    mins = st.radio("Duration (minutes):", [1,2,3])
+    cat = st.selectbox("**Category:**", list(drill_questions.keys()), key="cat_select")
+    level = st.selectbox("**Difficulty (Basic Math)**:", [1,2,3], format_func=lambda x:f"Level {x}") if cat=="Basic Math" else None
+    mins = st.radio("**Duration (minutes)**:", [1,2,3])
     if st.button("Start Drill"):
         st.session_state.update({
             "drill_active": True,
@@ -145,7 +137,7 @@ if st.session_state.get("drill_active"):
             else:
                 st.error(st.session_state.feedback)
         # input
-        ans = st.text_input("Answer (Enter to submit):", key="ans", on_change=lambda: st.session_state.update(submitted=True))
+        ans = st.text_input("**Answer (Enter to submit)**:", key="ans", on_change=lambda: st.session_state.update(submitted=True))
         # Early end button at bottom
         if st.button("End Drill Early", key="end_bottom"):
             st.session_state.end_time = datetime.now()
