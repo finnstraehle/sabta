@@ -1,226 +1,164 @@
-# pages/2_Drills.py
-
 import streamlit as st
 import random
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
+from data.drill_questions import drill_questions
 
-# Set page configuration and logo
-st.set_page_config(
-    page_title="Mental Math Drills",
-    page_icon="🧠",
-    layout="wide"
-)
-st.logo("data/sabta_logo.png", size="large")
+# ── Initial State ─────────────────────────────────────────────────────────────
+if "stats" not in st.session_state:
+    st.session_state.stats = {
+        cat: {"attempted": 0, "correct": 0}
+        for cat in [
+            "Basic Math", "Real World Math", "Logical Reasoning",
+            "Numerical Reasoning"
+        ]
+    }
 
-st.title("🧠 Practice Drills")
-st.write(
-    "Hone your skills with **timed drills**. Select a category and time limit, then solve as many questions as you can. "
-    "Press **Enter** to submit each answer. Your answers will be checked instantly, and a score will be shown at the end."
-)
 
-# Question banks for fixed categories
-real_world_questions = [
-    ("If a bank offers 5% annual interest on $1,000, how much will you have after 1 year?", 1050),
-    ("A company’s revenue is $500 and profit is $100. What is the profit margin (in %)?", "20%"),
-    ("Fixed costs are $1,000 and profit per unit is $50. How many units must be sold to break even?", 20),
-    ("If an investment grows from $200 to $242 in one year, what was the percentage gain?", "21%"),
-    ("You invest $100 today and get $150 back in 3 years. What is the total return in dollars?", 50),
-]
-logical_questions = [
-    ("If all VIPs are club members, and all club members are invited, are all VIPs invited? (True/False)", "True"),
-    ("If A > B and B > C, is A > C? (True/False)", "True"),
-    ("Tom is taller than Jim, and Jim is taller than Alex. Is Tom taller than Alex? (True/False)", "True"),
-    ("All cats are mammals. Rex is a mammal. Conclusion: Rex is a cat. (True/False/Cannot Say)", "Cannot Say"),
-    ("If the day after tomorrow is Friday, what day is today?", "Wednesday"),
-]
-numerical_questions = [
-    ("If 5 pens cost $15, how much would 8 pens cost?", 24),
-    ("A shop sells 3 apples for $1. How many apples can you buy for $5?", 15),
-    ("There are 120 students, 55% of them are male. How many females are there?", 54),
-    ("Train A travels 60 miles in 1 hour. How long to travel 150 miles at the same speed?", 2.5),
-    ("A recipe needs 3 cups of flour to serve 4 people. How many cups are needed for 6 people?", 4.5),
-]
-chart_questions = [
-    {"labels": ["Q1", "Q2", "Q3", "Q4"], "data": [10, 15, 5, 20],
-     "question": "Which quarter had the highest sales?", "answer": "Q4"},
-    {"labels": ["Q1", "Q2", "Q3", "Q4"], "data": [30, 20, 10, 15],
-     "question": "Were sales highest in Q1? (True/False)", "answer": "True"},
-]
-verbal_questions = [
-    ("\"All dogs have tails. Rex is a dog. Rex has a tail.\" Is this conclusion true? (True/False)", "True"),
-    ("\"Some books are long. The Bible is a book. The Bible is long.\" Does this conclusion follow? (True/False/Cannot Say)", "Cannot Say"),
-    ("If \"None of the engineers are women\" is true, can \"Some women are engineers\" be true? (True/False)", "False"),
-    ("\"All A are B. All B are C. Therefore, all A are C.\" Is this conclusion valid? (True/False)", "True"),
-    ("\"Most people have cats. John is a person. John has a cat.\" Does this conclusion follow? (True/False/Cannot Say)", "Cannot Say"),
-]
-
-def generate_basic_math_question(difficulty=1):
-    """Generate a basic math question (adaptive difficulty)."""
-    if difficulty == 1:
-        ops, max_val = ['+', '-'], 20
-    elif difficulty == 2:
-        ops, max_val = ['+', '-', '*'], 50
-    else:
-        ops, max_val = ['+', '-', '*', '/'], 100
-
+def gen_basic_question(level):
+    """Generate a random basic math question for given difficulty."""
+    ops = ["+", "-"] if level == 1 else ["+", "-", "*"] if level == 2 else ["+", "-", "*", "/"]
+    max_val = 20 if level == 1 else 50 if level == 2 else 100
+    a = random.randint(1, max_val)
+    b = random.randint(1, max_val)
     op = random.choice(ops)
-    if op == '+':
-        a, b = random.randint(1, max_val), random.randint(1, max_val)
+    if op == "+":
         return f"{a} + {b}", a + b
-    if op == '-':
-        a, b = random.randint(1, max_val), random.randint(1, max_val)
-        if b > a: a, b = b, a
+    if op == "-":
+        a, b = max(a,b), min(a,b)
         return f"{a} - {b}", a - b
-    if op == '*':
-        limit = 10 if difficulty == 2 else 12
-        a, b = random.randint(2, limit), random.randint(2, limit)
-        return f"{a} * {b}", a * b
-    # division
-    b = random.randint(2, 12)
-    result = random.randint(1, 10)
-    return f"{b * result} / {b}", result
+    if op == "*":
+        return f"{a} × {b}", a * b
+    # division: ensure integer result
+    result = random.randint(1, max_val//2)
+    return f"{result*b} ÷ {b}", result
 
-def check_answer(user_input, correct_answer):
-    """Compare user_input (string) to correct_answer (int/float/str)."""
-    if user_input is None: return False
-    ui = user_input.strip().lower()
-    # Numeric compare
+def get_question(category, level):
+    """Return a (question, answer) tuple based on category."""
+    if category == "Basic Math":
+        return gen_basic_question(level or 1)
+    data = drill_questions[category]
+    if category == "Chart Analysis":
+        series, q, ans = random.choice(data)
+        return (series, q), ans
+    return random.choice(data)
+
+def check_answer(user, correct):
+    """Validate user's answer against correct answer."""
     try:
-        if isinstance(correct_answer, (int, float)):
-            return abs(float(ui) - float(correct_answer)) < 1e-6
+        # numeric compare
+        if isinstance(correct, (int, float)):
+            return abs(float(user) - correct) < 1e-6
     except:
         pass
-    ca = str(correct_answer).lower()
-    if ca in ["true", "false", "cannot say"]:
-        return ui == ca or (ca == "cannot say" and ui in ["can't say", "cannot say"])
-    # percentage style
-    return ui.replace("%","") == ca.replace("%","")
+    return str(user).strip().lower() == str(correct).lower()
+
+def clear_drill_state():
+    """Remove all session state keys related to drills except stats."""
+    stats = st.session_state.stats
+    st.session_state.clear()
+    st.session_state.stats = stats
+
+# ── Page Setup ────────────────────────────────────────────────────────────────
+st.set_page_config(page_title="Math Drills", layout="wide")
+st.title("🧠 Practice Drills")
+
+st.write("Solve timed drills. Press Enter to submit answers. After each drill you can start a new one.")
+
+# Show overall stats
+with st.expander("Your Overall Stats (in this session)"):
+    df = {
+        cat: {
+            "attempted": v["attempted"],
+            "correct": v["correct"],
+            "accuracy (%)": round(v["correct"]/v["attempted"]*100) if v["attempted"]>0 else 0
+        }
+        for cat,v in st.session_state.stats.items()
+    }
+    st.table(df)
 
 # ── Drill Setup ────────────────────────────────────────────────────────────────
-if not st.session_state.get("drill_active", False):
-    st.session_state.drill_active = False
-    st.session_state.feedback_message = ""
-    category = st.selectbox(
-        "Choose a category:",
-        ["Basic Math", "Real World Math", "Logical Reasoning",
-         "Numerical Reasoning", "Chart Analysis", "Verbal Reasoning"],
-        key="drill_category_select"
-    )
-    duration = st.radio("Time limit:", [3,5], format_func=lambda x: f"{x} minutes", key="drill_time_select")
+if not st.session_state.get("drill_active"):
+    cat = st.selectbox("Category:", list(drill_questions.keys()), key="cat_select")
+    level = st.selectbox("Difficulty (Basic Math):", [1,2,3], format_func=lambda x:f"Level {x}") if cat=="Basic Math" else None
+    mins = st.radio("Duration (minutes):", [1,2,3])
     if st.button("Start Drill"):
-        st.session_state.drill_active = True
-        st.session_state.drill_category = category
-        st.session_state.drill_end_time = datetime.now() + timedelta(minutes=duration)
-        st.session_state.drill_attempts = 0
-        st.session_state.drill_correct = 0
-        # Adaptive difficulty state
-        st.session_state.drill_difficulty = 1 if category=="Basic Math" else None
-        st.session_state.correct_streak = 0
-        st.session_state.current_question = None
-        st.session_state.current_answer = None
-        st.session_state.submitted = False
-        st.session_state.user_input = ""
+        st.session_state.update({
+            "drill_active": True,
+            "cat": cat,
+            "level": level,
+            "end_time": datetime.now()+timedelta(minutes=mins),
+            "attempted":0,
+            "correct":0,
+            "current_q": None,
+            "feedback": ""
+        })
         st.rerun()
 
 # ── Drill Execution ────────────────────────────────────────────────────────────
 if st.session_state.get("drill_active"):
     now = datetime.now()
-    time_left = (st.session_state.drill_end_time - now).total_seconds()
-    stop = st.button("Stop Early")
-
-    if time_left <= 0 or stop:
-        # End drill
-        total = st.session_state.drill_attempts
-        correct = st.session_state.drill_correct
-        accuracy = total and correct/total*100 or 0
-        st.success("⏰ Time's up!" if time_left<=0 else "⏹️ Drill stopped.")
-        st.write(f"**You answered {correct}/{total} correctly.**  Accuracy: {accuracy:.1f}%")
-        # Update global stats
-        cat = st.session_state.drill_category
-        if total>0:
-            st.session_state.stats[cat]["attempted"] += total
-            st.session_state.stats[cat]["correct"] += correct
-        # Pie chart
-        if total>0:
-            fig, ax = plt.subplots()
-            ax.pie([correct, total-correct],
-                   labels=["Correct","Incorrect"],
-                   autopct="%1.0f%%",
-                   colors=["#4caf50","#f44336"])
-            ax.axis("equal")
-            st.pyplot(fig)
+    if now >= st.session_state.end_time:
+        # Drill ended
+        a,t = st.session_state.correct, st.session_state.attempted
+        st.success(f"Done! {a}/{t} correct ({round(a/t*100,1) if t else 0}%)")
+        # update global stats
+        sc = st.session_state.stats
+        sc[st.session_state.cat]["attempted"] += t
+        sc[st.session_state.cat]["correct"] += a
         if st.button("New Drill"):
-            st.session_state.drill_active = False
+            clear_drill_state()
             st.rerun()
     else:
         # Show timer
-        m, s = divmod(int(time_left),60)
-        st.info(f"Time Remaining: {m:02d}:{s:02d}")
+        remain = (st.session_state.end_time - now).seconds
+        st.info(f"Time left: {remain//60:02d}:{remain%60:02d}")
+        st.divider()
+        # load question if needed
+        if st.session_state.current_q is None:
+            q,a = get_question(st.session_state.cat, st.session_state.level)
+            st.session_state.current_q, st.session_state.current_a = q,a
+            st.session_state.ans = ""
+        # display question with styled container
+        q = st.session_state.current_q
+        # Display question with styled container
+        if isinstance(q, tuple):
+            series, question = q
+            st.bar_chart(series)
+        else:
+            question = q
 
-        # Load or generate question
-        if st.session_state.current_question is None:
-            cat = st.session_state.drill_category
-            if cat == "Basic Math":
-                q, a = generate_basic_math_question(st.session_state.drill_difficulty)
-            elif cat == "Real World Math":
-                q, a = random.choice(real_world_questions)
-            elif cat == "Logical Reasoning":
-                q, a = random.choice(logical_questions)
-            elif cat == "Numerical Reasoning":
-                q, a = random.choice(numerical_questions)
-            elif cat == "Chart Analysis":
-                item = random.choice(chart_questions)
-                q, a = item["question"], item["answer"]
-                st.session_state.chart_labels, st.session_state.chart_data = item["labels"], item["data"]
-            else:  # Verbal
-                q, a = random.choice(verbal_questions)
-            st.session_state.current_question = q
-            st.session_state.current_answer = a
-            st.session_state.feedback_message = ""
-
-        # Display chart if needed
-        if st.session_state.drill_category == "Chart Analysis":
-            df = {lab: val for lab, val in zip(st.session_state.chart_labels, st.session_state.chart_data)}
-            st.bar_chart(df)
-
-        # Show question & last feedback
-        st.write(f"**Question:** {st.session_state.current_question}")
-        if st.session_state.feedback_message:
-            if st.session_state.feedback_message.startswith("Correct"):
-                st.success(st.session_state.feedback_message)
+        with st.container():
+            st.markdown(
+            f"""
+            <div style="padding: 20px; border: 2px solid #B0B0B0; border-radius: 10px; background-color: #F5F5F5;">
+                <h2 style="color: #606060; text-align: center;">{question}</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
+            )
+        st.divider()
+        # feedback
+        if st.session_state.feedback:
+            if "Correct" in st.session_state.feedback:
+                st.success(st.session_state.feedback)
             else:
-                st.error(st.session_state.feedback_message)
-
-        # Handle answer input
-        def on_submit():
-            st.session_state.submitted = True
-        st.text_input("Your answer (press Enter):",
-                      key="user_input",
-                      on_change=on_submit)
-
-        if st.session_state.submitted:
-            user_ans = st.session_state.user_input
-            correct_ans = st.session_state.current_answer
-            is_right = check_answer(user_ans, correct_ans)
-            st.session_state.drill_attempts += 1
-            if is_right:
-                st.session_state.drill_correct += 1
-                st.session_state.feedback_message = "✅ Correct!"
-                # Adaptive difficulty for Basic Math
-                if st.session_state.drill_category=="Basic Math":
-                    st.session_state.correct_streak += 1
-                    if st.session_state.correct_streak >= 3 and st.session_state.drill_difficulty < 3:
-                        st.session_state.drill_difficulty += 1
-                        st.session_state.correct_streak = 0
+                st.error(st.session_state.feedback)
+        # input
+        ans = st.text_input("Answer (Enter to submit):", key="ans", on_change=lambda: st.session_state.update(submitted=True))
+        # Early end button at bottom
+        if st.button("End Drill Early", key="end_bottom"):
+            st.session_state.end_time = datetime.now()
+            st.rerun()
+        if st.session_state.get("submitted"):
+            correct = check_answer(st.session_state.ans, st.session_state.current_a)
+            st.session_state.attempted += 1
+            if correct:
+                st.session_state.correct += 1
+                st.session_state.feedback = "✅ Correct!"
             else:
-                st.session_state.feedback_message = f"❌ Incorrect — the answer was {correct_ans}"
-                if st.session_state.drill_category=="Basic Math":
-                    st.session_state.correct_streak = 0
-
-            # Reset for next question
-            st.session_state.current_question = None
-            st.session_state.current_answer = None
+                st.session_state.feedback = f"❌ Incorrect (Ans: {st.session_state.current_a})"
+            # prepare next
+            st.session_state.current_q = None
             st.session_state.submitted = False
-            st.session_state.user_input = ""
             st.rerun()
