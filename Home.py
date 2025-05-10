@@ -5,7 +5,7 @@ import altair as alt
 from PIL import Image
 import os
 
-st.set_page_config(page_title="Case Interview Practice Platform", layout="wide")
+st.set_page_config(page_title="SABTA – Interview Practice Platform", layout="wide")
 st.logo("data/sabta_logo.png", size="large")
 
 # Title and welcome message
