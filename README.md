@@ -1,1 +1,1 @@
-README File TBD
+SABTA is an all-in-one platform designed to help students master case interview preparation for consulting, finance, and tech roles. From structured frameworks and interactive math drills to AI-powered sparring sessions and real-time analytics, SABTA streamlines the entire prep process into one intuitive tool. Built by students, for students.
