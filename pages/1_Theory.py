@@ -1,9 +1,25 @@
 ## pages/1_CasePrep.py
 import streamlit as st
 
-st.set_page_config(page_title="Case Prep Guide", layout="wide")
+# Set page configuration and logo
+st.set_page_config(
+    page_title="Case Interview Preparation Guide",
+    page_icon="🎓",
+    layout="wide"
+)
+st.logo("data/sabta_logo.png", size="large")
 
-st.title("Case Interview Preparation Guide")
+
+# Example of a Streamlit tabs
+tab1, tab2, tab3 = st.tabs(["Tab 1", "Tab 2", "Tab 3"])
+with tab1:
+    st.write("This is Tab 1")
+with tab2:
+    st.write("This is Tab 2")
+with tab3:
+    st.write("This is Tab 3")
+
+st.title("🎓 Case Interview Preparation Guide")
 st.write(
     "This section provides a comprehensive guide on how to approach case interviews. "
     "Learn how to **structure problems**, communicate effectively, apply **mental models** and frameworks, "
