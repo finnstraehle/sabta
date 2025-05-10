@@ -67,6 +67,8 @@ selected_tickers = st.sidebar.multiselect(
     options=available_tickers,
     default=["AAPL", "MSFT", "GOOGL", "AMZN"]  # default selection
 )
+
+st.divider()
 # Ensure at least one ticker is selected, else show a warning.
 if len(selected_tickers) == 0:
     st.sidebar.error("Please select at least one company.")

@@ -32,4 +32,59 @@ st.write(
 )
 
 # Example of a video
+
 st.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+
+# Problem statement and use case – Outstanding Implementation (3/4)
+with st.container():
+    st.markdown(
+        """
+        <div style="padding: 20px; border: 2px solid #4A90E2; border-radius: 10px; background-color: #F5F9FF;">
+            <h2 style="color: #4A90E2; text-align: center; margin-bottom: 15px;">Clearly Defined Problem & Use Case</h2>
+            <p style="font-size: 15px; line-height: 1.6; margin: 8px 0;">
+                As students navigating the challenging world of consulting and finance, our team faced a common yet daunting problem: preparation for case interviews is overwhelmingly fragmented. With resources scattered across countless websites, PDF guides, forums, and books, preparation often felt disjointed, chaotic, and inefficient.
+            </p>
+            <p style="font-size: 15px; line-height: 1.6; margin: 8px 0;">
+                We repeatedly experienced the frustration of losing crucial preparation time simply switching between various sources and tools—this wasn’t just inconvenient; it significantly impacted our confidence and readiness. Interviews are stressful enough, and the lack of a cohesive, integrated preparation platform magnified that anxiety.
+            </p>
+            <p style="font-size: 15px; line-height: 1.6; margin: 8px 0;">
+                After collectively attending over 200 interviews at top-tier consulting and finance firms, we realized a critical gap existed in accessible, integrated, and genuinely effective interview preparation. Out of necessity and personal ambition, we decided to build the solution we wished we had from day one.
+            </p>
+            <h3 style="color: #4A90E2; margin-top: 20px;">Our Comprehensive Solution</h3>
+            <p style="font-size: 15px; line-height: 1.6; margin: 8px 0;">
+                This platform unites every essential element into one intuitive interface:
+                guided frameworks, timed math drills, real data analytics, and interactive
+                sparring—powered by AI.
+            </p>
+            <p style="font-size: 15px; line-height: 1.6; margin: 8px 0;">
+                Students can seamlessly flow from learning the core concepts to practicing
+                under pressure, reviewing analytics on their performance, and sharpening
+                their communication skills with a simulated partner.
+            </p>
+            <h3 style="color: #4A90E2; margin-top: 20px;">Key Features at a Glance</h3>
+            <ul style="font-size: 15px; line-height: 1.6;">
+                <li><strong>Case Prep Guides:</strong> Structured frameworks, interactive hints, and real-world examples.</li>
+                <li><strong>Math Drills:</strong> Timed questions across four difficulty levels to build speed and accuracy.</li>
+                <li><strong>Finance Analytics:</strong> Live market data, chart tools, and scenario simulations.</li>
+                <li><strong>Interview Sparring:</strong> Peer-modeled Q&A rounds for live feedback and scoring.</li>
+                <li><strong>AI-Powered Sparring:</strong> A smart partner that adapts questions to your skill level in real time.</li>
+            </ul>
+            <h3 style="color: #4A90E2; margin-top: 20px;">Why It Matters</h3>
+            <p style="font-size: 15px; line-height: 1.6; margin: 8px 0;">
+                By centralizing all interview prep tools, students regain control and clarity—
+                fostering confidence, reducing anxiety, and dramatically improving outcomes.
+            </p>
+            <h3 style="color: #4A90E2; margin-top: 20px;">About Our Team</h3>
+            <p style="font-size: 15px; line-height: 1.6; margin: 8px 0;">
+                Built by four friends who collectively completed 200+ interviews at top firms,
+                we’ve distilled years of firsthand experience into this platform. Every line of
+                code, chart, and question reflects our own journey and rigorous research.
+            </p>
+            <p style="font-size: 15px; line-height: 1.6; margin: 8px 0;">
+                Our goal: empower every candidate to feel prepared, supported, and ready to
+                excel—no matter how complex the case or tight the schedule.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
