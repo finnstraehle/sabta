@@ -5,10 +5,15 @@ import random
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 
-# Page config
-st.set_page_config(page_title="Practice Drills", layout="wide")
+# Set page configuration and logo
+st.set_page_config(
+    page_title="Mental Math Drills",
+    page_icon="🧠",
+    layout="wide"
+)
+st.logo("data/sabta_logo.png", size="large")
 
-st.title("Practice Drills")
+st.title("🧠 Practice Drills")
 st.write(
     "Hone your skills with **timed drills**. Select a category and time limit, then solve as many questions as you can. "
     "Press **Enter** to submit each answer. Your answers will be checked instantly, and a score will be shown at the end."

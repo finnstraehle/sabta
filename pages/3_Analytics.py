@@ -1,12 +1,21 @@
 
 import streamlit as st
+import pandas as pd
+from datetime import datetime, timedelta
+import yfinance as yf
+import plotly.express as px
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.linear_model import LinearRegression
 
-# Set page configuration (title, icon, layout) and apply a custom theme.
+# Set page configuration and logo
 st.set_page_config(
     page_title="Stock Performance Analyzer",
-    page_icon="📈",
+    page_icon="📊",
     layout="wide"
 )
+st.logo("data/sabta_logo.png", size="large")
 
 
 # Title of the app and an introduction (written to the main page, not sidebar).
@@ -67,7 +76,6 @@ st.sidebar.markdown("### 2️⃣ Date Range Selection\nSelect the start and end 
 # 2. Date Range Selection:
 # Use two date inputs (or a single range slider for simplicity) for start and end dates.
 # Here we use st.date_input for start and end.
-from datetime import datetime, timedelta
 # Default date range: last 1 year from today.
 default_end = datetime.today().date()
 default_start = default_end - timedelta(days=365)
@@ -86,10 +94,14 @@ num_clusters = st.sidebar.slider(
 )
 # (We set a minimum of 2 clusters because a single cluster isn't very interesting for grouping.)
 
-st.sidebar.markdown("### 4️⃣ Benchmark & Risk-Free Rate\nEnter a benchmark index ticker (e.g., ^GSPC) and an annual risk-free rate for computing Beta, Alpha, and Sharpe ratio.")
+# Update benchmark section: text and input
+st.sidebar.markdown("### 4️⃣ Benchmark & Risk-Free Rate\nSelect a benchmark index and enter an annual risk-free rate for computing Beta, Alpha, and Sharpe ratio.")
 # Benchmark selection for regression analysis (e.g., S&P 500)
-benchmark_ticker = st.sidebar.text_input(
-    "Benchmark index ticker (e.g., ^GSPC):", value="^GSPC"
+benchmark_options = ["^GSPC", "^DJI", "^IXIC"]
+benchmark_ticker = st.sidebar.selectbox(
+    "Benchmark index ticker",
+    options=benchmark_options,
+    index=0
 )
 # Risk-free rate input for Sharpe ratio (annual)
 risk_free_rate_annual = st.sidebar.number_input(
@@ -126,7 +138,6 @@ else:
     st.write(f"Fetching historical stock data from Yahoo Finance for: {', '.join(selected_tickers)}.")
 
 # Data Loading and Caching
-import pandas as pd
 
 @st.cache_data(ttl=3600)
 def load_stock_data(tickers, start_date, end_date):
@@ -142,7 +153,6 @@ def load_stock_data(tickers, start_date, end_date):
                           If multiple tickers, returns a MultiIndex DataFrame (Ticker x [Open, High, Low, Close, Adj Close, Volume]).
                           If single ticker, returns a DataFrame with columns [Open, High, Low, Close, Adj Close, Volume].
     """
-    import yfinance as yf
     # yfinance will fetch daily historical data for the tickers.
     # We set auto_adjust=False to get raw prices and an explicit 'Adj Close' column for adjusted close prices.
     # We disable progress printout by setting progress=False if available (in newer yfinance).
@@ -213,7 +223,6 @@ if 'index' in plot_df.columns:
     plot_df.rename(columns={'index': 'Date'}, inplace=True)
 
 # Use Plotly for interactive line chart:
-import plotly.express as px
 fig = px.line(plot_df, x='Date', y='Normalized Price', color='Ticker',
               title="Normalized Stock Price (Start = 100)",
               labels={'Normalized Price': 'Normalized Price (Start=100)', 'Date': 'Date'})
@@ -243,12 +252,6 @@ st.plotly_chart(fig_corr, use_container_width=True)
 # We annotated each cell with the correlation value (two decimal places) for clarity.
 
 # ---- Machine Learning: Clustering stocks by performance ----
-st.subheader("K-Means Clustering of Stocks (Risk vs Return)")
-st.write("Clustering groups stocks with similar total return and volatility characteristics. Adjust cluster count to see different groupings.")
-st.write(f"We apply an unsupervised machine learning model (K-Means) to cluster the selected stocks into **{num_clusters}** groups, "
-         "based on their **risk and return** characteristics over the chosen period. "
-         "Here, we define 'return' as the total percentage change in price over the period, and 'risk' as the volatility (standard deviation of daily returns).")
-
 # Prepare features for clustering:
 # Feature 1: Total return (%) over the period for each stock.
 total_return = (stock_prices.iloc[-1] / stock_prices.iloc[0] - 1) * 100  # percentage change from first to last day
@@ -263,54 +266,74 @@ features_df = pd.DataFrame({
 # Drop any stocks where return or volatility couldn't be computed (shouldn't happen unless data issues).
 features_df.dropna(inplace=True)
 
-# Scale features before clustering (K-Means is distance-based, so it's good to normalize features).
-from sklearn.preprocessing import StandardScaler
-scaler = StandardScaler()
-X = scaler.fit_transform(features_df[['Return (%)', 'Volatility (%)']])
-
-# Perform K-Means clustering:
-from sklearn.cluster import KMeans
-kmeans = KMeans(n_clusters=num_clusters, n_init='auto', random_state=42)
-cluster_labels = kmeans.fit_predict(X)
-features_df['Cluster'] = cluster_labels  # assign cluster labels to each stock
-
-# Evaluate clustering performance using silhouette score (only if more than 1 cluster):
-from sklearn.metrics import silhouette_score
-# Compute silhouette score only when cluster count is valid (at least 2 clusters and fewer clusters than samples)
-if num_clusters > 1 and features_df.shape[0] > num_clusters:
-    sil_score = silhouette_score(X, cluster_labels)
-    st.write(f"**Silhouette Score** of the clustering: {sil_score:.2f} "
-             "(Silhouette score ranges from -1 to 1, where higher is better. Scores above 0 indicate meaningful clustering.)")
+if num_clusters > features_df.shape[0]:
+    st.warning(f"Cannot perform clustering: number of clusters ({num_clusters}) cannot exceed number of stocks ({features_df.shape[0]}). Please select fewer clusters or add more stocks.")
 else:
-    st.warning(
-        f"Cannot compute silhouette score: number of clusters ({num_clusters}) "
-        f"must be at least 2 and less than the number of stocks ({features_df.shape[0]})."
+    st.subheader("K-Means Clustering of Stocks (Risk vs Return)")
+    st.write("Clustering groups stocks with similar total return and volatility characteristics. Adjust cluster count to see different groupings.")
+    st.write(f"We apply an unsupervised machine learning model (K-Means) to cluster the selected stocks into **{num_clusters}** groups, "
+             "based on their **risk and return** characteristics over the chosen period. "
+             "Here, we define 'return' as the total percentage change in price over the period, and 'risk' as the volatility (standard deviation of daily returns).")
+
+    # Prepare features for clustering:
+    # Feature 1: Total return (%) over the period for each stock.
+    total_return = (stock_prices.iloc[-1] / stock_prices.iloc[0] - 1) * 100  # percentage change from first to last day
+    # Feature 2: Volatility (%) - we take standard deviation of daily returns and convert to percentage.
+    volatility = returns.std() * 100
+
+    # Create a DataFrame of features for each stock:
+    features_df = pd.DataFrame({
+        'Return (%)': total_return,
+        'Volatility (%)': volatility
+    })
+    # Drop any stocks where return or volatility couldn't be computed (shouldn't happen unless data issues).
+    features_df.dropna(inplace=True)
+
+    # Scale features before clustering (K-Means is distance-based, so it's good to normalize features).
+    scaler = StandardScaler()
+    X = scaler.fit_transform(features_df[['Return (%)', 'Volatility (%)']])
+
+    # Perform K-Means clustering:
+    kmeans = KMeans(n_clusters=num_clusters, n_init='auto', random_state=42)
+    cluster_labels = kmeans.fit_predict(X)
+    features_df['Cluster'] = cluster_labels  # assign cluster labels to each stock
+
+    # Evaluate clustering performance using silhouette score (only if more than 1 cluster):
+    # Compute silhouette score only when cluster count is valid (at least 2 clusters and fewer clusters than samples)
+    if num_clusters > 1 and features_df.shape[0] > num_clusters:
+        sil_score = silhouette_score(X, cluster_labels)
+        st.write(f"**Silhouette Score** of the clustering: {sil_score:.2f} "
+                 "(Silhouette score ranges from -1 to 1, where higher is better. Scores above 0 indicate meaningful clustering.)")
+    else:
+        st.warning(
+            f"Cannot compute silhouette score: number of clusters ({num_clusters}) "
+            f"must be at least 2 and less than the number of stocks ({features_df.shape[0]})."
+        )
+
+    # Display cluster centers (in original scale) if needed:
+    # cluster_centers = scaler.inverse_transform(kmeans.cluster_centers_)
+    # We could show cluster centers for return/volatility, but it's optional.
+
+    # Create an interactive scatter plot for clusters:
+    features_df['Ticker'] = features_df.index  # bring ticker name as a column for plotting
+    fig_clusters = px.scatter(
+        features_df, x='Volatility (%)', y='Return (%)', color=features_df['Cluster'].astype(str),
+        text='Ticker', opacity=0.8, size_max=60,
+        title="Clusters of Stocks by Risk (Volatility) and Return",
+        labels={'color': 'Cluster'}
     )
+    fig_clusters.update_traces(textposition='top center')
+    fig_clusters.update_layout(legend_title_text='Cluster')
+    st.plotly_chart(fig_clusters, use_container_width=True)
+    # The scatter plot shows each stock positioned by its volatility (x-axis) and total return (y-axis).
+    # Points with the same color belong to the same cluster.
+    # We also label each point with the ticker symbol for clarity.
 
-# Display cluster centers (in original scale) if needed:
-# cluster_centers = scaler.inverse_transform(kmeans.cluster_centers_)
-# We could show cluster centers for return/volatility, but it's optional.
-
-# Create an interactive scatter plot for clusters:
-features_df['Ticker'] = features_df.index  # bring ticker name as a column for plotting
-fig_clusters = px.scatter(
-    features_df, x='Volatility (%)', y='Return (%)', color=features_df['Cluster'].astype(str),
-    text='Ticker', opacity=0.8, size_max=60,
-    title="Clusters of Stocks by Risk (Volatility) and Return",
-    labels={'color': 'Cluster'}
-)
-fig_clusters.update_traces(textposition='top center')
-fig_clusters.update_layout(legend_title_text='Cluster')
-st.plotly_chart(fig_clusters, use_container_width=True)
-# The scatter plot shows each stock positioned by its volatility (x-axis) and total return (y-axis).
-# Points with the same color belong to the same cluster.
-# We also label each point with the ticker symbol for clarity.
-
-# Additionally, let's list the stocks in each cluster for easier interpretation:
-st.write("**Cluster Composition:**")
-for cluster_num in sorted(features_df['Cluster'].unique()):
-    members = features_df[features_df['Cluster'] == cluster_num]['Ticker'].tolist()
-    st.write(f"- **Cluster {cluster_num}:** " + ", ".join(members))
+    # Additionally, let's list the stocks in each cluster for easier interpretation:
+    st.write("**Cluster Composition:**")
+    for cluster_num in sorted(features_df['Cluster'].unique()):
+        members = features_df[features_df['Cluster'] == cluster_num]['Ticker'].tolist()
+        st.write(f"- **Cluster {cluster_num}:** " + ", ".join(members))
 
 # ---- Financial Metrics for Interview Prep ----
 st.write(
@@ -353,7 +376,6 @@ bench_returns = bench_prices.pct_change().dropna()
 aligned = returns.join(bench_returns.rename('Benchmark'), how='inner')
 
 # Compute Beta and Alpha using linear regression
-from sklearn.linear_model import LinearRegression
 betas = {}
 alphas = {}
 for ticker in returns.columns:
