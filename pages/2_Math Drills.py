@@ -1,6 +1,7 @@
 import streamlit as st
 import random
 from datetime import datetime, timedelta
+# load our predefined set of drill questions from the data folder
 from data.drill_questions import drill_questions
 
 if "stats" not in st.session_state:
@@ -12,41 +13,60 @@ if "stats" not in st.session_state:
         ]
     }
 
+# function to generate a random basic math question based on chosen difficulty level
 def gen_basic_question(level):
+    # pick allowed operators depending on difficulty (level 1: +-, level 2: +-* , level 3: +-*/ )
     ops = ["+", "-"] if level == 1 else ["+", "-", "*"] if level == 2 else ["+", "-", "*", "/"]
+    # set the maximum operand value based on difficulty (higher level = larger numbers)
     max_val = 20 if level == 1 else 50 if level == 2 else 100
+    # randomly choose two numbers and then pick one operator from the allowed list
     a = random.randint(1, max_val)
     b = random.randint(1, max_val)
     op = random.choice(ops)
+    # handle addition: return question string and correct answer
     if op == "+":
         return f"{a} + {b}", a + b
+    # handle subtraction: ensure no negative results by ordering operands
     if op == "-":
         a, b = max(a,b), min(a,b)
         return f"{a} - {b}", a - b
+    # handle multiplication: return question and product
     if op == "*":
         return f"{a} × {b}", a * b
+    # for division: generate a dividend that divides evenly to avoid fractions
     result = random.randint(1, max_val//2)
     return f"{result*b} ÷ {b}", result
 
+# choose which question generator to use: basic math or predefined real-world questions
 def get_question(category, level):
+    # if category is Basic Math, use the gen_basic_question function
     if category == "Basic Math":
         return gen_basic_question(level or 1)
+    # for other categories, load the list of questions from the drill_questions module
     data = drill_questions[category]
     return random.choice(data)
 
+# validate the user's input: allow small float errors or exact string match
 def check_answer(user, correct):
     try:
+        # if the correct answer is numeric, compare floats with a tiny tolerance
         if isinstance(correct, (int, float)):
             return abs(float(user) - correct) < 1e-6
     except:
         pass
+    # otherwise compare answers as lowercase strings for exact match
     return str(user).strip().lower() == str(correct).lower()
 
+# clear all drill-related session state keys but keep the overall stats intact
 def clear_drill_state():
+    # save current stats before clearing state
     stats = st.session_state.stats
+    # remove all session state entries
     st.session_state.clear()
+    # restore the saved stats so they aren't lost
     st.session_state.stats = stats
 
+# set up the page title, icon, and layout for the drill interface
 st.set_page_config(
     page_title="Math Drills",
     page_icon="🧠",
@@ -58,13 +78,18 @@ st.set_page_config(
 # OpenAI. (2025). ChatGPT (Version 4.o) [Large language model]. https://chatgpt.com
 st.logo("data/sabta_logo.png", size="large")
 
-st.title("🧠 Practice Drills")
+# show the main heading for the drills section
+st.title("🧠 Math Drills")
 
+# brief instructions on how to use the drills feature
 st.write("Solve timed drills. Press Enter to submit answers. After each drill you can start a new one.")
 
+# visual separator before showing statistics
 st.divider()
 
+# expandable section to review current session stats
 with st.expander("Your Overall Stats (in this session)"):
+    # prepare a dataframe of attempts, correct answers, and accuracy per category
     df = {
         cat: {
             "attempted": v["attempted"],
@@ -73,13 +98,20 @@ with st.expander("Your Overall Stats (in this session)"):
         }
         for cat,v in st.session_state.stats.items()
     }
+    # display the stats in a formatted table
     st.table(df)
 
+# if no drill is active, show the setup controls
 if not st.session_state.get("drill_active"):
+    # let user pick a drill category from available topics
     cat = st.selectbox("**Category:**", list(drill_questions.keys()), key="cat_select")
+    # for Basic Math, allow selection of difficulty level
     level = st.selectbox("**Difficulty (Basic Math)**:", [1,2,3], format_func=lambda x:f"Level {x}") if cat=="Basic Math" else None
+    # choose how long the drill will run
     mins = st.radio("**Duration (minutes)**:", [1,2,3])
+    # start the drill with chosen settings when button is pressed
     if st.button("Start Drill"):
+        # initialize session state variables for the drill run
         st.session_state.update({
             "drill_active": True,
             "cat": cat,
@@ -90,34 +122,51 @@ if not st.session_state.get("drill_active"):
             "current_q": None,
             "feedback": ""
         })
+        # rerun script to enter drill mode
         st.rerun()
 
+# if a drill is active, execute the drill loop
 if st.session_state.get("drill_active"):
+    # get current time for timer comparison
     now = datetime.now()
+    # check if drill time has elapsed
     if now >= st.session_state.end_time:
+        # show final score when time is up
         a,t = st.session_state.correct, st.session_state.attempted
         st.success(f"Done! {a}/{t} correct ({round(a/t*100,1) if t else 0}%)")
+        # load overall stats to update with this drill's results
         sc = st.session_state.stats
         sc[st.session_state.cat]["attempted"] += t
         sc[st.session_state.cat]["correct"] += a
+        # button to reset and start a new drill
         if st.button("New Drill"):
+            # clear drill-specific state but keep overall stats
             clear_drill_state()
             st.rerun()
+    # drill is still running, show current question and timer
     else:
+        # calculate remaining seconds in the drill
         remain = (st.session_state.end_time - now).seconds
+        # display countdown timer to the user
         st.info(f"Time left: {remain//60:02d}:{remain%60:02d}")
+        # separate timer from question content
         st.divider()
+        # if no current question, fetch a new one
         if st.session_state.current_q is None:
             q,a = get_question(st.session_state.cat, st.session_state.level)
+            # save the new question and its answer into session state
             st.session_state.current_q, st.session_state.current_a = q,a
+            # reset the input field for the next answer
             st.session_state.ans = ""
         q = st.session_state.current_q
+        # if question is a chart, display it differently
         if isinstance(q, tuple):
             series, question = q
             st.bar_chart(series)
         else:
             question = q
 
+        # styled container for displaying the question text or chart
         with st.container():
             # Div coded once in a seperate HTML file and then copied in to every page only changing the color
             st.markdown(
@@ -128,21 +177,28 @@ if st.session_state.get("drill_active"):
             """,
             unsafe_allow_html=True
             )
+        # separate question display from feedback and input
         st.divider()
 
+        # if feedback exists, show success or error message
         if st.session_state.feedback:
             if "Correct" in st.session_state.feedback:
                 st.success(st.session_state.feedback)
             else:
                 st.error(st.session_state.feedback)
 
+        # text input for user to type their answer and submit with Enter
         ans = st.text_input("**Answer (Enter to submit)**:", key="ans", on_change=lambda: st.session_state.update(submitted=True))
 
+        # allow user to end the drill before time runs out
         if st.button("End Drill Early", key="end_bottom"):
             st.session_state.end_time = datetime.now()
             st.rerun()
+        # once answer is submitted, check correctness and record results
         if st.session_state.get("submitted"):
+            # compare user input to the correct answer
             correct = check_answer(st.session_state.ans, st.session_state.current_a)
+            # increment attempt count and update correct count if answer was right
             st.session_state.attempted += 1
             if correct:
                 st.session_state.correct += 1
@@ -150,6 +206,9 @@ if st.session_state.get("drill_active"):
             else:
                 st.session_state.feedback = f"❌ Incorrect (Ans: {st.session_state.current_a})"
 
+            # clear current question so the next one can be loaded
             st.session_state.current_q = None
+            # reset submission flag for next iteration
             st.session_state.submitted = False
+            # rerun the app to refresh with the next question
             st.rerun()

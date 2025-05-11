@@ -1,7 +1,8 @@
 import streamlit as st
 
+# Set the page configuration for the Streamlit app, including title and layout style
 st.set_page_config(
-    page_title="Case Interview Preparation Guide",
+    page_title="Interview Preparation Guide",
     page_icon="🎓",
     layout="wide"
 )
@@ -11,13 +12,13 @@ st.set_page_config(
 # OpenAI. (2025). ChatGPT (Version 4.o) [Large language model]. https://chatgpt.com
 st.logo("data/sabta_logo.png", size="large")
 
-st.title("🎓 Case Interview Preparation Guide")
+st.title("🎓 Interview Preparation Guide")
 
 st.write("Preparing for consulting and finance interviews requires structured thinking and practice. This page covers key strategies and tips to help you excel in interviews.")
 
 st.divider()
 
-# This section is based on a very extensive Notion summary by on of our team-member, which we uploaded to ChatGPT to help clarify and restructure the content using the following prompt:
+# All of the following is based on a very extensive Notion summary by on of our team-member, which we uploaded to ChatGPT to help clarify and restructure the content using the following prompt:
 # "Summarize and clarify the following content, focusing on key strategies and tips for case interviews. The content is a bit messy and needs to be clustered and organized into clear sections for a website."
 # OpenAI. (2025). ChatGPT (Version 4.o) [Large language model]. https://chatgpt.com
 st.markdown('''
@@ -30,7 +31,9 @@ st.markdown('''
 - **Be hypothesis-driven:** Start with a likely solution path and confirm or adjust it as you gather information.
 - **Quantify assumptions:** Attach rough numbers or percentages to ideas to make analysis concrete.
 ''')
+
 st.info('**Tipp:** Pause to plan your answer structure before diving into calculations or details.')
+
 st.info('**Tipp:** Always double-check with the interviewer if your solution direction matches their expectations.')
 
 st.header('Communication Strategies')
@@ -161,4 +164,5 @@ st.markdown('''
 - **Know Your Resume:** Be ready to discuss any detail on your resume confidently.
 - **Stay Informed:** Keep up with business news and industry trends to show business awareness.
 ''')
+
 st.info('Stay relaxed and confident: a good night’s sleep and a positive mindset are also key to performing well!')
