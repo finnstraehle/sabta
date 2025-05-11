@@ -1,12 +1,14 @@
 import streamlit as st
 import random
 import time
+# import the KNeighborsClassifier from scikit-learn for KNN recommendation
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 import pandas as pd
 
+# Set the page configuration for the Streamlit app, including title and layout style
 st.set_page_config(
-    page_title="Case Interview Preparation Guide",
+    page_title="Math Coach – Machine Learning",
     page_icon="📟",
     layout="wide"
 )
@@ -16,19 +18,24 @@ st.set_page_config(
 # OpenAI. (2025). ChatGPT (Version 4.o) [Large language model]. https://chatgpt.com
 st.logo("data/sabta_logo.png", size="large")
 
-st.title("📟 Case Interview Preparation Guide")
+# display the main header for this guide
+st.title("📟 Math Coach – Machine Learning")
+# explain what this page does and how it uses the math drill and KNN recommendation
 st.markdown("""
 This app generates 30 random math problems (addition, subtraction, multiplication, division) across three difficulty levels (same as in Math Drills) and records your answer time and accuracy. Afterwards, a KNN classifier (scikit-learn) is trained to recommend the optimal next difficulty level. You will also receive personalized feedback on your calculation performance.
 """)
 
+# separate the intro from the question section visually
 st.divider()
 
+# initialize session state variables for questions, timer, and performance tracking
 if 'questions' not in st.session_state:
     st.session_state['questions'] = []
     st.session_state['index'] = 0
     st.session_state['times'] = []
     st.session_state['correct'] = []
 
+    # helper function to create a random math question based on difficulty
     def generate_question(diff):
         if diff == 1:
             op = random.choices(['+', '-', '*', '/'], weights=[3,3,2,2])[0]
@@ -71,16 +78,21 @@ if 'questions' not in st.session_state:
             result = a // b
         return (a, op, b, result, diff)
 
+    # generate 30 random questions with varying difficulty
     for _ in range(30):
         level = random.randint(1, 3)
         st.session_state['questions'].append(generate_question(level))
 
+    # record the start time for the first question
     st.session_state['start_time'] = time.time()
 
+# if there are still unanswered questions, show the next one
 if st.session_state['index'] < 30:
     idx = st.session_state['index']
     a, op, b, result, diff = st.session_state['questions'][idx]
+    # display the current question number and its difficulty level
     st.write(f"**Question {idx+1} of 30 (Difficulty {diff})**")
+    # use a container to style the question prompt area
     with st.container():
             # Div coded once in a seperate HTML file and then copied in to every page only changing the color
             st.markdown(
@@ -91,31 +103,47 @@ if st.session_state['index'] < 30:
             """,
             unsafe_allow_html=True
             )
+    # separate the question display from the answer input
     st.divider()
+    # create a form so the user can submit their answer
     with st.form(key=f"form_{idx}"):
+        # input field for the user's numeric answer
         answer = st.number_input("Your answer:", value=0, step=1, min_value=-100000, max_value=100000, key=f"answer_{idx}")
+        # handle the submission: check answer, record time, and move on
         if st.form_submit_button("Submit answer"):
             end_time = time.time()
             duration = end_time - st.session_state['start_time']
             is_correct = (answer == result)
             st.session_state['times'].append(duration)
             st.session_state['correct'].append(is_correct)
+            # increase index to go to the next question
             st.session_state['index'] += 1
             st.session_state['start_time'] = time.time()
+            # re-run the script to update the UI for the next question
             st.rerun()
+    # calculate how far along the user is in the 30-question test
     progress = st.session_state['index'] / 30
+    # show a progress bar for the test completion
     st.progress(progress)
 
+# once all questions are done, show the results and feedback
 else:
+    # header for the results summary section
     st.header("Results")
+    # count how many questions the user got right
     total_correct = sum(st.session_state['correct'])
+    # compute the average time per question
     avg_time = np.mean(st.session_state['times'])
+    # display the total correct answers
     st.write(f"You answered **{total_correct} out of 30** questions correctly.")
+    # display the average response time
     st.write(f"Average time per question: **{avg_time:.1f} seconds**.")
 
+    # prepare counts for each operator to analyze performance
     ops = ['+', '-', '*', '/']
     op_counts = {op: 0 for op in ops}
     op_correct = {op: 0 for op in ops}
+    # tally correct and total for each operator type
     for i, (a, op, b, res, diff) in enumerate(st.session_state['questions']):
         op_counts[op] += 1
         if st.session_state['correct'][i]:
@@ -125,23 +153,30 @@ else:
         "Correct": [op_correct[op] for op in ops],
         "Incorrect": [op_counts[op] - op_correct[op] for op in ops]
     }, index=ops)
+    # show a bar chart of correct vs incorrect by operator
     st.bar_chart(chart_data)
 
+    # example training data for KNN showing performance patterns
     X_train = np.array([
         [5, 0.9], [7, 0.85], [9, 0.8],   # easy, fast & accurate
         [12, 0.7], [15, 0.6],            # moderate performance
         [20, 0.5], [25, 0.3], [30, 0.2]  # slower & less accurate
     ])
     y_train = np.array([1, 1, 1, 2, 2, 3, 3, 3])
+    # train the KNN classifier on the example data
     knn = KNeighborsClassifier(n_neighbors=3)
     knn.fit(X_train, y_train)
     accuracy = total_correct / 30
     user_features = np.array([[avg_time, accuracy]])
+    # predict the recommended difficulty based on the user's stats
     predicted_level = knn.predict(user_features)[0]
+    # display the recommended next difficulty level
     st.subheader(f"Recommended difficulty level: {predicted_level}")
 
+    # collect personalized feedback messages in this list
     feedbacks = []
 
+    # check accuracy per operator and add specific feedback
     for op in ops:
         count = op_counts.get(op, 0)
         correct_count = op_correct.get(op, 0)
@@ -156,6 +191,7 @@ else:
             elif op == '+':
                 feedbacks.append("You often make mistakes in additions. Focus on adding carefully.")
 
+    # add general performance feedback based on accuracy and speed
     if accuracy >= 0.9 and avg_time < 7:
         feedbacks.append("Excellent and fast performance! Keep it up.")
     if accuracy >= 0.9:
@@ -167,9 +203,12 @@ else:
     if avg_time > 20 and accuracy > 0.8:
         feedbacks.append("You are very accurate but quite slow. Try to work more swiftly.")
 
+    # if no specific feedback, give a general positive comment
     if not feedbacks:
         feedbacks.append("Good work! Overall, you are at a solid level.")
 
+    # header for the feedback section
     st.subheader("Your Feedback:")
+    # display each feedback item as a bullet point
     for msg in feedbacks:
         st.write(f"- {msg}")

@@ -1,3 +1,9 @@
+# Disclaimer:
+# This page was primarily developed by one team member who has a strong background in coding,
+# He previously attended a summer school focused on data science and web development, and is currently building his own startup in this space.
+# As a result, some features on this page go well beyond what we learned in the course.
+# That said, our goal was simply to make something that works and is genuinely useful for finance interview prep,
+# something we ourselves would want to use and explore. The result is this page.
 
 import streamlit as st
 import pandas as pd
@@ -10,7 +16,7 @@ from sklearn.metrics import silhouette_score
 from sklearn.linear_model import LinearRegression
 
 st.set_page_config(
-    page_title="Stock Performance Analyzer",
+    page_title="Interactive Stock Performance Analyzer – Machine Learning",
     page_icon="📊",
     layout="wide"
 )
@@ -20,7 +26,7 @@ st.set_page_config(
 # OpenAI. (2025). ChatGPT (Version 4.o) [Large language model]. https://chatgpt.com
 st.logo("data/sabta_logo.png", size="large")
 
-st.title("📊 Interactive Stock Performance Analyzer")
+st.title("📊 Interactive Stock Performance Analyzer – Machine Learning")
 st.markdown(
     "This interactive tool helps you prepare for finance interviews by analyzing stock performance, "
     "clustering similar stocks, and computing key metrics like Sharpe ratio, Beta/Alpha, and valuation multiples. "
@@ -43,7 +49,7 @@ st.sidebar.write("Select the dataset and parameters for analysis:")
 st.sidebar.markdown("### 1️⃣ Company Selection\nChoose one or more stock tickers to analyze. At least one ticker is required.")
 # 1. Company Selection:
 # Provide a list of example stock tickers for user to choose from.
-# We include a diverse set of companies across industries for meaningful comparisons.
+# We include a diverse set of companies across industries for comparisons.
 available_tickers = [
     "AAPL",  # Apple Inc.
     "MSFT",  # Microsoft Corp.
@@ -93,7 +99,6 @@ num_clusters = st.sidebar.slider(
     "Number of clusters (for grouping stocks):",
     min_value=2, max_value=6, value=3, step=1
 )
-# (We set a minimum of 2 clusters because a single cluster isn't very interesting for grouping.)
 
 # Update benchmark section: text and input
 st.sidebar.markdown("### 4️⃣ Benchmark & Risk-Free Rate\nSelect a benchmark index and enter an annual risk-free rate for computing Beta, Alpha, and Sharpe ratio.")
@@ -139,7 +144,6 @@ else:
     st.write(f"Fetching historical stock data from Yahoo Finance for: {', '.join(selected_tickers)}.")
 
 # Data Loading and Caching
-
 @st.cache_data(ttl=3600)
 def load_stock_data(tickers, start_date, end_date):
     """
@@ -207,7 +211,6 @@ st.write(
     "Ensure the data looks correct before proceeding to visualizations."
 )
 
-# ---- Visualization 1: Price trend chart ----
 st.subheader("Stock Price Performance Over Time")
 st.write("This line chart normalizes each stock to 100 at the start date, showing relative performance over time.")
 # We will create a line chart of the normalized price trends.
@@ -234,7 +237,6 @@ fig.update_layout(legend_title_text='Company', hovermode="x unified")
 st.plotly_chart(fig, use_container_width=True)
 # The above chart allows the user to hover over dates to see each stock's normalized price, and toggle lines via the legend.
 
-# ---- Visualization 2: Correlation Heatmap ----
 st.subheader("Correlation Matrix of Daily Returns")
 st.write("This heatmap reveals pairwise correlations of daily returns, helping identify stocks that move together.")
 # Calculate daily percentage returns for each stock:
@@ -252,7 +254,7 @@ st.plotly_chart(fig_corr, use_container_width=True)
 # The heatmap uses a red-blue colormap: red for positive correlation, blue for negative.
 # We annotated each cell with the correlation value (two decimal places) for clarity.
 
-# ---- Machine Learning: Clustering stocks by performance ----
+# Machine Learning: Clustering stocks by performance
 # Prepare features for clustering:
 # Feature 1: Total return (%) over the period for each stock.
 total_return = (stock_prices.iloc[-1] / stock_prices.iloc[0] - 1) * 100  # percentage change from first to last day
@@ -311,10 +313,6 @@ else:
             f"must be at least 2 and less than the number of stocks ({features_df.shape[0]})."
         )
 
-    # Display cluster centers (in original scale) if needed:
-    # cluster_centers = scaler.inverse_transform(kmeans.cluster_centers_)
-    # We could show cluster centers for return/volatility, but it's optional.
-
     # Create an interactive scatter plot for clusters:
     features_df['Ticker'] = features_df.index  # bring ticker name as a column for plotting
     fig_clusters = px.scatter(
@@ -336,7 +334,7 @@ else:
         members = features_df[features_df['Cluster'] == cluster_num]['Ticker'].tolist()
         st.write(f"- **Cluster {cluster_num}:** " + ", ".join(members))
 
-# ---- Financial Metrics for Interview Prep ----
+# Financial Metrics for Interview Prep
 st.write(
     "Below are key performance and risk metrics commonly discussed in finance interviews, calculated for each stock."
 )
@@ -396,15 +394,13 @@ metrics_df = metrics_df.round(4)
 # Display metrics table
 st.dataframe(metrics_df)
 
-# ---- Valuation Multiples for IB/PE Interview Prep ----
+# Valuation Multiples for IB/PE Interview Prep
 st.write(
     "Common valuation multiples are essential for IB/PE case discussions. We fetch these from market data for your selected tickers."
 )
 st.subheader("Valuation Multiples for IB/PE Interview Prep")
 st.write("Common valuation multiples: P/E (trailing & forward), PEG ratio, P/B ratio, EV/EBITDA, EV/Sales.")
 
-# Fetch fundamental metrics for each ticker
-import yfinance as yf
 multiples = {}
 for ticker in selected_tickers:
     info = yf.Ticker(ticker).info
