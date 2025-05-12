@@ -47,7 +47,7 @@ st.write(
 )
 
 # Embed our 4min Video
-st.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+st.video("https://youtu.be/qh9a-E1y6ZI")
 
 # Problem statement and use case coded in sperate HTML file for better styling and then embedded
 with st.container():
