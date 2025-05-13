@@ -6,3 +6,12 @@ SABTA is an all-in-one platform designed to help students master case interview 
 
 GO-TO:
 https://sabta-io.streamlit.app
+
+Presentation Video:
+https://www.youtube.com/watch?v=TGstX2uJddQ
+
+<!-- Stock video footage created on Artlist
+Artlist. (2025). AI Image & Video [Video Software]. https://artlist.io/image-to-video-ai -->
+
+<!-- Voice-over created on Artlist
+Artlist. (2025). AI Image & Video [Audio Software]. https://artlist.io/voice-over -->

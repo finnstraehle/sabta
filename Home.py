@@ -47,7 +47,13 @@ st.write(
 )
 
 # Embed our 4min Video
-st.video("https://youtu.be/qh9a-E1y6ZI")
+
+# Stock video footage created on Artlist
+# Artlist. (2025). AI Image & Video [Video Software]. https://artlist.io/image-to-video-ai
+
+# Voice-over created on Artlist
+# Artlist. (2025). AI Image & Video [Audio Software]. https://artlist.io/voice-over
+st.video("https://www.youtube.com/watch?v=TGstX2uJddQ")
 
 # Problem statement and use case coded in sperate HTML file for better styling and then embedded
 with st.container():
