@@ -10,7 +10,7 @@ https://sabta-io.streamlit.app
 Presentation Video:
 https://www.youtube.com/watch?v=TGstX2uJddQ
 
-<!-- Stock video footage created on Artlist
+<!-- Stock video footage created on Artlist, Rest is Screen-Recording
 Artlist. (2025). AI Image & Video [Video Software]. https://artlist.io/image-to-video-ai -->
 
 <!-- Voice-over created on Artlist
